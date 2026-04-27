@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
+import 'package:spend_pilot/core/utils/date_formatter.dart';
 
 class TransactionCard extends StatelessWidget {
   final Expense expense;
@@ -66,7 +67,7 @@ class TransactionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDate(expense.date),
+                      DateFormatter.formatDate(expense.date),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textTertiary,
@@ -122,25 +123,5 @@ class TransactionCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Today';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday';
-    } else {
-      return '${date.day} ${_getMonth(date.month)}, ${date.year}';
-    }
-  }
-
-  String _getMonth(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
   }
 }
