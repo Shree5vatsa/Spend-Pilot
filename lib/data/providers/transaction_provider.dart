@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/data/services/hive_service.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 
-// Provider for Hive service
+// Provider for Hive service - use the same instance
 final hiveServiceProvider = Provider<HiveService>((ref) {
-  return HiveService();
+  return HiveService.instance;
 });
 
 // Provider for transactions
@@ -21,21 +21,26 @@ class TransactionNotifier extends StateNotifier<List<Expense>> {
   }
 
   // Load from Hive
-  void _loadTransactions() {
-    final saved = _hiveService.getAllExpenses();
-    if (saved.isEmpty) {
-      // First launch - load mock data
+  Future<void> _loadTransactions() async {
+    try {
+      final saved = await _hiveService.getAllExpenses();
+      if (saved.isEmpty) {
+        // First launch - load mock data
+        state = _mockTransactions;
+        await _saveAllToHive();
+      } else {
+        state = saved;
+      }
+    } catch (e) {
+      // If error, load mock data
       state = _mockTransactions;
-      _saveAllToHive();
-    } else {
-      state = saved;
     }
   }
 
   // Save all to Hive
-  void _saveAllToHive() {
+  Future<void> _saveAllToHive() async {
     for (var expense in state) {
-      _hiveService.addExpense(expense);
+      await _hiveService.addExpense(expense);
     }
   }
 

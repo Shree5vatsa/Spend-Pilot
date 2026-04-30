@@ -6,9 +6,8 @@ import 'package:spend_pilot/modules/tracker/screens/dashboard_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
-  final hiveService = HiveService();
-  await hiveService.init();
+  // Initialize Hive singleton
+  await HiveService.instance.init();
 
   runApp(const ProviderScope(child: SpendPilotApp()));
 }

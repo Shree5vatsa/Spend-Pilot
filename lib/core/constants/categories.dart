@@ -72,3 +72,76 @@ class ExpenseCategory {
     }
   }
 }
+
+class IncomeCategory {
+  final String id;
+  final String name;
+  final String icon;
+  final Color color;
+
+  const IncomeCategory({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+  });
+
+  static const List<IncomeCategory> all = [
+    IncomeCategory(
+      id: 'salary',
+      name: 'Salary',
+      icon: '💼',
+      color: Color(0xFF10B981),
+    ),
+    IncomeCategory(
+      id: 'freelance',
+      name: 'Freelance',
+      icon: '💻',
+      color: Color(0xFF3B82F6),
+    ),
+    IncomeCategory(
+      id: 'gift',
+      name: 'Gift',
+      icon: '🎁',
+      color: Color(0xFFF59E0B),
+    ),
+    IncomeCategory(
+      id: 'investment',
+      name: 'Investment',
+      icon: '📈',
+      color: Color(0xFF8B5CF6),
+    ),
+    IncomeCategory(
+      id: 'refund',
+      name: 'Refund',
+      icon: '💰',
+      color: Color(0xFFEC4899),
+    ),
+    IncomeCategory(
+      id: 'bonus',
+      name: 'Bonus',
+      icon: '🏆',
+      color: Color(0xFF14B8A6),
+    ),
+    IncomeCategory(
+      id: 'rental',
+      name: 'Rental',
+      icon: '🏠',
+      color: Color(0xFFF97316),
+    ),
+    IncomeCategory(
+      id: 'other_income',
+      name: 'Other',
+      icon: '📌',
+      color: Color(0xFF6B7280),
+    ),
+  ];
+
+  static IncomeCategory? fromId(String id) {
+    try {
+      return all.firstWhere((cat) => cat.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+}

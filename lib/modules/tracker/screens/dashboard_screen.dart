@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
+import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 import 'add_transaction_screen.dart';
+import 'transaction_history_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -62,6 +64,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _deleteTransaction(String id) async {
     await ref.read(transactionProvider.notifier).deleteTransaction(id);
+  }
+
+  Future<void> _showDeleteDialog(Expense expense) async {
+    final confirmed = await ConfirmationDialog.show(
+      context: context,
+      title: 'Delete Transaction',
+      message: 'Delete "${expense.title}"? This cannot be undone.',
+      confirmText: 'Delete',
+      confirmColor: AppColors.error,
+    );
+
+    if (confirmed == true) {
+      await _deleteTransaction(expense.id);
+    }
   }
 
   @override
@@ -242,7 +258,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Recent Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
+              );
+            },
+            child: const Text(
+              'Recent Transactions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -273,27 +300,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Text('Tap the + button to add your first transaction', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showDeleteDialog(Expense expense) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Transaction'),
-        content: Text('Delete "${expense.title}"? This cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () async {
-              await _deleteTransaction(expense.id);
-              if (mounted) Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
       ),
     );
   }
