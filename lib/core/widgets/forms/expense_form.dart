@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
-import 'package:spend_pilot/core/constants/categories.dart';
 import 'package:spend_pilot/core/widgets/inputs/custom_text_field.dart';
 import 'package:spend_pilot/core/widgets/inputs/category_selector.dart';
 import 'package:spend_pilot/core/widgets/inputs/date_picker_field.dart';
@@ -64,7 +63,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
         CategorySelector(
           selectedCategoryId: widget.selectedCategoryId,
           onCategorySelected: widget.onCategoryChanged,
-          focusColor: AppColors.error,
+          selectedBackgroundColor: AppColors.error.withValues(alpha: 0.15), // Light red
         ),
         const SizedBox(height: 16),
         DatePickerField(

@@ -20,8 +20,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   bool _isExpense = true;
 
-  String _selectedExpenseCategoryId = 'food';
-  String _selectedIncomeCategoryId = 'salary';
+  String _selectedExpenseCategoryId = '';  // Empty = nothing selected
+  String _selectedIncomeCategoryId = '';   // Empty = nothing selected
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -56,12 +56,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         title: const Text('Add Transaction'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: TextButton(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
+          color: AppColors.textSecondary,
         ),
         actions: [
           TextButton(

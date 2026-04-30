@@ -5,19 +5,17 @@ import 'package:spend_pilot/core/constants/categories.dart';
 class CategorySelector extends StatelessWidget {
   final String selectedCategoryId;
   final ValueChanged<String> onCategorySelected;
-  final Color? focusColor;
+  final Color? selectedBackgroundColor; // Light red or light green
 
   const CategorySelector({
     super.key,
     required this.selectedCategoryId,
     required this.onCategorySelected,
-    this.focusColor,
+    this.selectedBackgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = focusColor ?? AppColors.primary;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -47,12 +45,11 @@ class CategorySelector extends StatelessWidget {
               onTap: () => onCategorySelected(category.id),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected ? category.color.withValues(alpha: 0.2) : Colors.white,
+                  color: isSelected
+                      ? (selectedBackgroundColor ?? category.color.withValues(alpha: 0.2))
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? category.color : borderColor,
-                    width: isSelected ? 2 : 1,
-                  ),
+                  // NO BORDER
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
