@@ -1,25 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
-import 'package:spend_pilot/shared/models/expense.dart';
 import 'package:spend_pilot/core/utils/date_formatter.dart';
 
 class TransactionCard extends StatelessWidget {
-  final Expense expense;
+  final String id;
+  final String title;
+  final double amount;
+  final DateTime date;
+  final String category;
+  final String? note;
+  final bool isIncome;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
   const TransactionCard({
     super.key,
-    required this.expense,
+    required this.id,
+    required this.title,
+    required this.amount,
+    required this.date,
+    required this.category,
+    this.note,
+    required this.isIncome,
     this.onTap,
     this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final category = ExpenseCategory.fromId(expense.category);
-    final isNegative = !expense.isIncome;
+    final categoryObj = ExpenseCategory.fromId(category);
+    final isNegative = !isIncome;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -36,30 +47,27 @@ class TransactionCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Category Icon Container
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: (category?.color ?? Colors.grey).withValues(alpha: 0.1),
+                  color: (categoryObj?.color ?? Colors.grey).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
-                    category?.icon ?? '📌',
+                    categoryObj?.icon ?? '📌',
                     style: const TextStyle(fontSize: 24),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Title and Date
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      expense.title,
+                      title,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -67,16 +75,16 @@ class TransactionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormatter.formatDate(expense.date),
+                      DateFormatter.formatDate(date),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textTertiary,
                       ),
                     ),
-                    if (expense.note != null) ...[
+                    if (note != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        expense.note!,
+                        note!,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textTertiary,
@@ -88,13 +96,11 @@ class TransactionCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Amount
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${isNegative ? '-' : '+'} \$${expense.amount.toStringAsFixed(2)}',
+                    '${isNegative ? '-' : '+'} \$${amount.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -105,14 +111,14 @@ class TransactionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: (category?.color ?? Colors.grey).withValues(alpha: 0.1),
+                      color: (categoryObj?.color ?? Colors.grey).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      category?.name ?? 'Other',
+                      categoryObj?.name ?? 'Other',
                       style: TextStyle(
                         fontSize: 10,
-                        color: category?.color ?? Colors.grey,
+                        color: categoryObj?.color ?? Colors.grey,
                       ),
                     ),
                   ),

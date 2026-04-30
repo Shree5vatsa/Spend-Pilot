@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:spend_pilot/core/constants/colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:spend_pilot/data/services/hive_service.dart';
 import 'package:spend_pilot/modules/tracker/screens/dashboard_screen.dart';
 
-void main() {
-  runApp(const SpendPilotApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive
+  final hiveService = HiveService();
+  await hiveService.init();
+
+  runApp(const ProviderScope(child: SpendPilotApp()));
 }
 
 class SpendPilotApp extends StatelessWidget {
@@ -13,13 +20,12 @@ class SpendPilotApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Spend Pilot',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0066FF)),
         useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
       ),
       home: const DashboardScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }

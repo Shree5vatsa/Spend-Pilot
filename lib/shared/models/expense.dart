@@ -1,10 +1,28 @@
+import 'package:hive/hive.dart';
+
+part 'expense.g.dart';
+
+@HiveType(typeId: 0)
 class Expense {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String title;
+
+  @HiveField(2)
   final double amount;
+
+  @HiveField(3)
   final DateTime date;
+
+  @HiveField(4)
   final String category;
+
+  @HiveField(5)
   final String? note;
+
+  @HiveField(6)
   final bool isIncome;
 
   Expense({
@@ -16,24 +34,4 @@ class Expense {
     this.note,
     this.isIncome = false,
   });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'amount': amount,
-    'date': date.toIso8601String(),
-    'category': category,
-    'note': note,
-    'isIncome': isIncome,
-  };
-
-  factory Expense.fromJson(Map<String, dynamic> json) => Expense(
-    id: json['id'],
-    title: json['title'],
-    amount: json['amount'],
-    date: DateTime.parse(json['date']),
-    category: json['category'],
-    note: json['note'],
-    isIncome: json['isIncome'] ?? false,
-  );
 }

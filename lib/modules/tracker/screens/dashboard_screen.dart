@@ -1,180 +1,122 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
-import 'package:spend_pilot/core/constants/categories.dart';
-import 'package:spend_pilot/shared/models/expense.dart';
+import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
-import 'package:spend_pilot/core/utils/date_formatter.dart';
+import 'package:spend_pilot/shared/models/expense.dart';
+import 'add_transaction_screen.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  // Mock data - will be replaced with real data source later
-  List<Expense> _expenses = [];
-  double _totalIncome = 0;
-  double _totalExpense = 0;
-  double _balance = 0;
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  String _selectedPeriod = 'Month';
 
-  @override
-  void initState() {
-    super.initState();
-    _loadMockData();
-  }
-
-  void _loadMockData() {
+  List<Expense> _getFilteredTransactions(List<Expense> allTransactions) {
     final now = DateTime.now();
-    _expenses = [
-      Expense(
-        id: '1',
-        title: 'Salary',
-        amount: 3000.00,
-        date: DateTime(now.year, now.month, 25),
-        category: 'other',
-        isIncome: true,
-      ),
-      Expense(
-        id: '2',
-        title: 'Coffee',
-        amount: 4.50,
-        date: DateTime(now.year, now.month, now.day),
-        category: 'food',
-      ),
-      Expense(
-        id: '3',
-        title: 'Uber Ride',
-        amount: 12.00,
-        date: DateTime(now.year, now.month, now.day - 1),
-        category: 'transport',
-      ),
-      Expense(
-        id: '4',
-        title: 'Grocery Shopping',
-        amount: 85.50,
-        date: DateTime(now.year, now.month, now.day - 2),
-        category: 'shopping',
-      ),
-      Expense(
-        id: '5',
-        title: 'Netflix',
-        amount: 15.99,
-        date: DateTime(now.year, now.month, now.day - 5),
-        category: 'entertainment',
-      ),
-      Expense(
-        id: '6',
-        title: 'Gym Membership',
-        amount: 50.00,
-        date: DateTime(now.year, now.month, now.day - 8),
-        category: 'healthcare',
-      ),
-      Expense(
-        id: '7',
-        title: 'Electricity Bill',
-        amount: 75.00,
-        date: DateTime(now.year, now.month, now.day - 12),
-        category: 'bills',
-      ),
-    ];
-    _calculateStats();
+    DateTime startDate;
+
+    switch (_selectedPeriod) {
+      case 'Week':
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        break;
+      case 'Month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'Year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      default:
+        startDate = DateTime(now.year, now.month, 1);
+    }
+
+    return allTransactions.where((e) =>
+    e.date.isAfter(startDate) &&
+        e.date.isBefore(now.add(const Duration(days: 1)))
+    ).toList();
   }
 
-  void _calculateStats() {
-    _totalIncome = _expenses
+  double _getTotalIncome(List<Expense> transactions) {
+    return transactions
         .where((e) => e.isIncome)
-        .fold(0, (sum, e) => sum + e.amount);
-    _totalExpense = _expenses
+        .fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  double _getTotalExpense(List<Expense> transactions) {
+    return transactions
         .where((e) => !e.isIncome)
-        .fold(0, (sum, e) => sum + e.amount);
-    _balance = _totalIncome - _totalExpense;
-    setState(() {});
+        .fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  double _getBalance(List<Expense> transactions) {
+    return _getTotalIncome(transactions) - _getTotalExpense(transactions);
+  }
+
+  Future<void> _addTransaction(Expense expense) async {
+    await ref.read(transactionProvider.notifier).addTransaction(expense);
+  }
+
+  Future<void> _deleteTransaction(String id) async {
+    await ref.read(transactionProvider.notifier).deleteTransaction(id);
   }
 
   @override
   Widget build(BuildContext context) {
+    final allTransactions = ref.watch(transactionProvider);
+    final filteredTransactions = _getFilteredTransactions(allTransactions);
+    final totalIncome = _getTotalIncome(filteredTransactions);
+    final totalExpense = _getTotalExpense(filteredTransactions);
+    final balance = _getBalance(filteredTransactions);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Spend Pilot'),
+        title: const Text('Spend Pilot', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Search functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              // TODO: Profile screen
-            },
-          ),
+          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          _loadMockData();
-        },
+        onRefresh: () async => setState(() {}),
+        color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Date Selector
               _buildDateSelector(),
               const SizedBox(height: 16),
-
-              // Stats Cards
-              _buildStatsSection(),
+              _buildStatsSection(balance, totalIncome, totalExpense),
               const SizedBox(height: 24),
-
-              // Recent Transactions Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Recent Transactions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        // TODO: Navigate to full transaction history
-                      },
-                      child: const Text('See All'),
-                    ),
-                  ],
-                ),
-              ),
+              _buildRecentTransactionsHeader(filteredTransactions.length),
               const SizedBox(height: 8),
-
-              // Transaction List
-              _expenses.isEmpty
+              filteredTransactions.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _expenses.length > 5 ? 5 : _expenses.length,
+                itemCount: filteredTransactions.length > 5 ? 5 : filteredTransactions.length,
                 itemBuilder: (context, index) {
+                  final expense = filteredTransactions[index];
                   return TransactionCard(
-                    expense: _expenses[index],
-                    onTap: () {
-                      // TODO: View expense detail
-                    },
-                    onLongPress: () {
-                      // TODO: Delete/edit options
-                    },
+                    id: expense.id,
+                    title: expense.title,
+                    amount: expense.amount,
+                    date: expense.date,
+                    category: expense.category,
+                    note: expense.note,
+                    isIncome: expense.isIncome,
+                    onTap: () {},
+                    onLongPress: () => _showDeleteDialog(expense),
                   );
                 },
               ),
@@ -183,8 +125,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Add expense screen
+        onPressed: () async {
+          final result = await Navigator.push<Expense>(
+            context,
+            MaterialPageRoute(builder: (context) => const AddTransactionScreen()),
+          );
+          if (result != null) {
+            await _addTransaction(result);
+          }
         },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add),
@@ -192,110 +140,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-
-
   Widget _buildDateSelector() {
-    final now = DateTime.now();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPeriodChip('Week'),
+            const SizedBox(width: 4),
+            _buildPeriodChip('Month'),
+            const SizedBox(width: 4),
+            _buildPeriodChip('Year'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodChip(String label) {
+    final isSelected = _selectedPeriod == label;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPeriod = label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(double balance, double totalIncome, double totalExpense) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
-                const SizedBox(width: 8),
-                Text(
-                  '${DateFormatter.getMonth(now.month)} ${now.day}, ${now.year}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const Icon(Icons.arrow_drop_down, size: 20),
-              ],
-            ),
-          ),
-          const Spacer(),
-          _buildFilterChip('Week'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Month'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Year'),
+          Expanded(child: _buildStatCard('Balance', balance, AppColors.primary, Icons.account_balance_wallet, '\$')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildStatCard('Income', totalIncome, AppColors.success, Icons.trending_up, '+ \$')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildStatCard('Expenses', totalExpense, AppColors.error, Icons.trending_down, '- \$')),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    return FilterChip(
-      label: Text(label),
-      selected: label == 'Month', // Default selected
-      onSelected: (selected) {
-        // TODO: Filter expenses by period
-      },
-      backgroundColor: Colors.white,
-      selectedColor: AppColors.primaryLight,
-      checkmarkColor: AppColors.primary,
-      side: BorderSide(color: AppColors.border),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              title: 'Balance',
-              amount: _balance,
-              color: AppColors.primary,
-              icon: Icons.account_balance_wallet,
-              prefix: '\$',
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              title: 'Income',
-              amount: _totalIncome,
-              color: AppColors.success,
-              icon: Icons.trending_up,
-              prefix: '+ \$',
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              title: 'Expenses',
-              amount: _totalExpense,
-              color: AppColors.error,
-              icon: Icons.trending_down,
-              prefix: '- \$',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required double amount,
-    required Color color,
-    required IconData icon,
-    required String prefix,
-  }) {
+  Widget _buildStatCard(String title, double amount, Color color, IconData icon, String prefix) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -311,23 +223,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              Text(title, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             '$prefix${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionsHeader(int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('Recent Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(20),
             ),
+            child: Text('$count total', style: TextStyle(fontSize: 12, color: AppColors.primary)),
           ),
         ],
       ),
@@ -340,21 +262,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.receipt_long, size: 64, color: AppColors.textTertiary),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
+              child: Icon(Icons.receipt_long, size: 48, color: AppColors.primary),
+            ),
             const SizedBox(height: 16),
-            Text(
-              'No transactions yet',
-              style: TextStyle(color: AppColors.textTertiary),
-            ),
+            Text('No transactions yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Add expense
-              },
-              child: const Text('Add Your First Expense'),
-            ),
+            Text('Tap the + button to add your first transaction', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Expense expense) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Transaction'),
+        content: Text('Delete "${expense.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              await _deleteTransaction(expense.id);
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
       ),
     );
   }
