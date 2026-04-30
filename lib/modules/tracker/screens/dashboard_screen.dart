@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
+import 'package:spend_pilot/core/constants/categories.dart';
+import 'package:spend_pilot/core/widgets/cards/stat_card.dart';
+import 'package:spend_pilot/core/widgets/filters/period_chip.dart';
+import 'package:spend_pilot/core/widgets/filters/filter_chip.dart';
+import 'package:spend_pilot/core/widgets/filters/sort_dropdown.dart';
+import 'package:spend_pilot/core/widgets/filters/category_filter_row.dart';
 import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
@@ -16,13 +22,29 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  String _selectedStat = 'Balance';
   String _selectedPeriod = 'Month';
+  String _selectedCategory = 'all';
+  String _selectedType = 'all';
+  String _sortOrder = 'newest';
+
+  final List<String> _periods = ['Today', 'Week', 'Month', 'Year'];
+  final List<String> _sortOptions = ['newest', 'oldest', 'amount_high', 'amount_low'];
+  final Map<String, String> _sortLabels = {
+    'newest': 'Newest first',
+    'oldest': 'Oldest first',
+    'amount_high': 'Amount: High to Low',
+    'amount_low': 'Amount: Low to High',
+  };
 
   List<Expense> _getFilteredTransactions(List<Expense> allTransactions) {
     final now = DateTime.now();
     DateTime startDate;
 
     switch (_selectedPeriod) {
+      case 'Today':
+        startDate = DateTime(now.year, now.month, now.day);
+        break;
       case 'Week':
         startDate = now.subtract(Duration(days: now.weekday - 1));
         break;
@@ -36,26 +58,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         startDate = DateTime(now.year, now.month, 1);
     }
 
-    return allTransactions.where((e) =>
+    var filtered = allTransactions.where((e) =>
     e.date.isAfter(startDate) &&
         e.date.isBefore(now.add(const Duration(days: 1)))
     ).toList();
+
+    if (_selectedCategory != 'all') {
+      filtered = filtered.where((e) => e.category == _selectedCategory).toList();
+    }
+
+    if (_selectedType == 'income') {
+      filtered = filtered.where((e) => e.isIncome).toList();
+    } else if (_selectedType == 'expense') {
+      filtered = filtered.where((e) => !e.isIncome).toList();
+    }
+
+    switch (_sortOrder) {
+      case 'newest':
+        filtered.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case 'amount_high':
+        filtered.sort((a, b) => b.amount.compareTo(a.amount));
+        break;
+      case 'amount_low':
+        filtered.sort((a, b) => a.amount.compareTo(b.amount));
+        break;
+    }
+
+    return filtered;
   }
 
   double _getTotalIncome(List<Expense> transactions) {
-    return transactions
-        .where((e) => e.isIncome)
-        .fold(0.0, (sum, e) => sum + e.amount);
+    return transactions.where((e) => e.isIncome).fold(0.0, (sum, e) => sum + e.amount);
   }
 
   double _getTotalExpense(List<Expense> transactions) {
-    return transactions
-        .where((e) => !e.isIncome)
-        .fold(0.0, (sum, e) => sum + e.amount);
+    return transactions.where((e) => !e.isIncome).fold(0.0, (sum, e) => sum + e.amount);
   }
 
   double _getBalance(List<Expense> transactions) {
     return _getTotalIncome(transactions) - _getTotalExpense(transactions);
+  }
+
+  double _getSelectedStatValue(List<Expense> transactions) {
+    switch (_selectedStat) {
+      case 'Income':
+        return _getTotalIncome(transactions);
+      case 'Expense':
+        return _getTotalExpense(transactions);
+      default:
+        return _getBalance(transactions);
+    }
   }
 
   Future<void> _addTransaction(Expense expense) async {
@@ -74,10 +130,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       confirmText: 'Delete',
       confirmColor: AppColors.error,
     );
-
     if (confirmed == true) {
       await _deleteTransaction(expense.id);
     }
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _selectedCategory = 'all';
+      _selectedType = 'all';
+      _sortOrder = 'newest';
+      _selectedPeriod = 'Month';
+    });
   }
 
   @override
@@ -109,11 +173,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDateSelector(),
               const SizedBox(height: 16),
               _buildStatsSection(balance, totalIncome, totalExpense),
-              const SizedBox(height: 24),
-              _buildRecentTransactionsHeader(filteredTransactions.length),
+              const SizedBox(height: 16),
+              _buildPeriodSelector(),
+              const SizedBox(height: 12),
+              _buildFilterRow(),
+              const SizedBox(height: 12),
+              _buildSortAndCountRow(filteredTransactions.length),
               const SizedBox(height: 8),
               filteredTransactions.isEmpty
                   ? _buildEmptyState()
@@ -136,6 +203,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 16),
+              _buildSeeAllButton(filteredTransactions.length),
             ],
           ),
         ),
@@ -156,129 +225,179 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDateSelector() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildPeriodChip('Week'),
-            const SizedBox(width: 4),
-            _buildPeriodChip('Month'),
-            const SizedBox(width: 4),
-            _buildPeriodChip('Year'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPeriodChip(String label) {
-    final isSelected = _selectedPeriod == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedPeriod = label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsSection(double balance, double totalIncome, double totalExpense) {
+  Widget _buildStatsSection(double balance, double income, double expense) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Expanded(child: _buildStatCard('Balance', balance, AppColors.primary, Icons.account_balance_wallet, '\$')),
+          Expanded(
+            child: StatCard(
+              title: 'Balance',
+              amount: balance,
+              color: AppColors.primary,
+              icon: Icons.account_balance_wallet,
+              prefix: '\$',
+              isSelected: _selectedStat == 'Balance',
+              onTap: () => setState(() => _selectedStat = 'Balance'),
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _buildStatCard('Income', totalIncome, AppColors.success, Icons.trending_up, '+ \$')),
+          Expanded(
+            child: StatCard(
+              title: 'Income',
+              amount: income,
+              color: AppColors.success,
+              icon: Icons.trending_up,
+              prefix: '+ \$',
+              isSelected: _selectedStat == 'Income',
+              onTap: () => setState(() => _selectedStat = 'Income'),
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _buildStatCard('Expenses', totalExpense, AppColors.error, Icons.trending_down, '- \$')),
+          Expanded(
+            child: StatCard(
+              title: 'Expense',
+              amount: expense,
+              color: AppColors.error,
+              icon: Icons.trending_down,
+              prefix: '- \$',
+              isSelected: _selectedStat == 'Expense',
+              onTap: () => setState(() => _selectedStat = 'Expense'),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, double amount, Color color, IconData icon, String prefix) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _buildPeriodSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: _periods.map((period) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: PeriodChip(
+              label: period,
+              isSelected: _selectedPeriod == period,
+              onTap: () => setState(() => _selectedPeriod = period),
+            ),
+          );
+        }).toList(),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildFilterRow() {
+    List<dynamic> categories = [];
+
+    if (_selectedType == 'income') {
+      categories = IncomeCategory.all;
+    } else if (_selectedType == 'expense') {
+      categories = ExpenseCategory.all;
+    } else {
+      categories = ExpenseCategory.all;
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(title, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-            ],
+          CategoryFilterRow(
+            categories: categories,
+            selectedCategoryId: _selectedCategory,
+            onCategorySelected: (id) => setState(() => _selectedCategory = id),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '$prefix${amount.toStringAsFixed(2)}',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          const SizedBox(width: 16),
+          FilterChipWidget(
+            label: 'Income',
+            isSelected: _selectedType == 'income',
+            onTap: () {
+              setState(() {
+                _selectedType = _selectedType == 'income' ? 'all' : 'income';
+                if (_selectedType != 'income') {
+                  _selectedCategory = 'all';
+                }
+              });
+            },
+            selectedColor: AppColors.success,
           ),
+          const SizedBox(width: 8),
+          FilterChipWidget(
+            label: 'Expense',
+            isSelected: _selectedType == 'expense',
+            onTap: () {
+              setState(() {
+                _selectedType = _selectedType == 'expense' ? 'all' : 'expense';
+                if (_selectedType != 'expense') {
+                  _selectedCategory = 'all';
+                }
+              });
+            },
+            selectedColor: AppColors.error,
+          ),
+          if (_selectedCategory != 'all' || _selectedType != 'all')
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: FilterChipWidget(
+                label: 'Clear',
+                isSelected: false,
+                onTap: _resetFilters,
+                selectedColor: AppColors.warning,
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentTransactionsHeader(int count) {
+  Widget _buildSortAndCountRow(int count) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
-              );
-            },
-            child: const Text(
-              'Recent Transactions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+          Text(
+            '$count transactions',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text('$count total', style: TextStyle(fontSize: 12, color: AppColors.primary)),
+          SortDropdown(
+            selectedValue: _sortOrder,
+            onChanged: (value) => setState(() => _sortOrder = value),
+            options: _sortOptions,
+            optionLabels: _sortLabels,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSeeAllButton(int count) {
+    if (count <= 5) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Center(
+        child: TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TransactionHistoryScreen(
+                  initialCategory: _selectedCategory,
+                  initialType: _selectedType,
+                  initialSortOrder: _sortOrder,
+                  initialPeriod: _selectedPeriod,
+                ),
+              ),
+            );
+          },
+          child: const Text(
+            'See All Transactions →',
+            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+          ),
+        ),
       ),
     );
   }
@@ -295,9 +414,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Icon(Icons.receipt_long, size: 48, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('No transactions yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
+            Text('No transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
-            Text('Tap the + button to add your first transaction', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+            Text('Tap + to add your first transaction', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
           ],
         ),
       ),

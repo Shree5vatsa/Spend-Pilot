@@ -2,61 +2,91 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
+import 'package:spend_pilot/core/widgets/filters/filter_chip.dart';
+import 'package:spend_pilot/core/widgets/filters/sort_dropdown.dart';
+import 'package:spend_pilot/core/widgets/filters/category_filter_row.dart';
+import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 
 class TransactionHistoryScreen extends ConsumerStatefulWidget {
-  const TransactionHistoryScreen({super.key});
+  final String initialCategory;
+  final String initialType;
+  final String initialSortOrder;
+  final String initialPeriod;
+
+  const TransactionHistoryScreen({
+    super.key,
+    this.initialCategory = 'all',
+    this.initialType = 'all',
+    this.initialSortOrder = 'newest',
+    this.initialPeriod = 'Month',
+  });
 
   @override
   ConsumerState<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
 }
 
 class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScreen> {
-  String _searchQuery = '';
-  String _selectedCategory = 'all';
-  String _selectedType = 'all'; // all, income, expense
-  String _sortOrder = 'newest'; // newest, oldest
+  late String _searchQuery;
+  late String _selectedCategory;
+  late String _selectedType;
+  late String _sortOrder;
+  late String _selectedPeriod;
 
-  DateTimeRange? _selectedDateRange;
+  final List<String> _periods = ['Today', 'Week', 'Month', 'Year', 'All'];
+  final List<String> _sortOptions = ['newest', 'oldest', 'amount_high', 'amount_low'];
+  final Map<String, String> _sortLabels = {
+    'newest': 'Newest first',
+    'oldest': 'Oldest first',
+    'amount_high': 'Amount: High to Low',
+    'amount_low': 'Amount: Low to High',
+  };
 
-  Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primary),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
+  @override
+  void initState() {
+    super.initState();
+    _searchQuery = '';
+    _selectedCategory = widget.initialCategory;
+    _selectedType = widget.initialType;
+    _sortOrder = widget.initialSortOrder;
+    _selectedPeriod = widget.initialPeriod;
+  }
+
+  List<Expense> _getFilteredTransactions(List<Expense> allTransactions) {
+    final now = DateTime.now();
+    DateTime? startDate;
+
+    switch (_selectedPeriod) {
+      case 'Today':
+        startDate = DateTime(now.year, now.month, now.day);
+        break;
+      case 'Week':
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        break;
+      case 'Month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'Year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      case 'All':
+        startDate = null;
+        break;
+      default:
+        startDate = DateTime(now.year, now.month, 1);
     }
-  }
 
-  void _clearFilters() {
-    setState(() {
-      _searchQuery = '';
-      _selectedCategory = 'all';
-      _selectedType = 'all';
-      _selectedDateRange = null;
-      _sortOrder = 'newest';
-    });
-  }
+    var filtered = allTransactions;
 
-  List<Expense> _filterTransactions(List<Expense> transactions) {
-    List<Expense> filtered = List.from(transactions);
+    if (startDate != null) {
+      filtered = filtered.where((e) =>
+      e.date.isAfter(startDate!) &&
+          e.date.isBefore(now.add(const Duration(days: 1)))
+      ).toList();
+    }
 
-    // Filter by search query
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((t) =>
       t.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -64,40 +94,48 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       ).toList();
     }
 
-    // Filter by category
     if (_selectedCategory != 'all') {
       filtered = filtered.where((t) => t.category == _selectedCategory).toList();
     }
 
-    // Filter by type
     if (_selectedType == 'income') {
       filtered = filtered.where((t) => t.isIncome).toList();
     } else if (_selectedType == 'expense') {
       filtered = filtered.where((t) => !t.isIncome).toList();
     }
 
-    // Filter by date range
-    if (_selectedDateRange != null) {
-      filtered = filtered.where((t) =>
-      t.date.isAfter(_selectedDateRange!.start) &&
-          t.date.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)))
-      ).toList();
-    }
-
-    // Sort
-    if (_sortOrder == 'newest') {
-      filtered.sort((a, b) => b.date.compareTo(a.date));
-    } else {
-      filtered.sort((a, b) => a.date.compareTo(b.date));
+    switch (_sortOrder) {
+      case 'newest':
+        filtered.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case 'amount_high':
+        filtered.sort((a, b) => b.amount.compareTo(a.amount));
+        break;
+      case 'amount_low':
+        filtered.sort((a, b) => a.amount.compareTo(b.amount));
+        break;
     }
 
     return filtered;
   }
 
+  void _resetFilters() {
+    setState(() {
+      _selectedCategory = 'all';
+      _selectedType = 'all';
+      _sortOrder = 'newest';
+      _selectedPeriod = 'Month';
+      _searchQuery = '';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final allTransactions = ref.watch(transactionProvider);
-    final filteredTransactions = _filterTransactions(allTransactions);
+    final filteredTransactions = _getFilteredTransactions(allTransactions);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -109,38 +147,20 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
           if (_searchQuery.isNotEmpty ||
               _selectedCategory != 'all' ||
               _selectedType != 'all' ||
-              _selectedDateRange != null)
+              _selectedPeriod != 'Month')
             IconButton(
               icon: const Icon(Icons.clear_all),
-              onPressed: _clearFilters,
+              onPressed: _resetFilters,
               tooltip: 'Clear filters',
             ),
         ],
       ),
       body: Column(
         children: [
-          // Search bar
           _buildSearchBar(),
-
-          // Filter chips
+          _buildPeriodSelector(),
           _buildFilterChips(),
-
-          // Results count
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${filteredTransactions.length} transactions',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                _buildSortButton(),
-              ],
-            ),
-          ),
-
-          // Transaction list
+          _buildSortAndCountRow(filteredTransactions.length),
           Expanded(
             child: filteredTransactions.isEmpty
                 ? _buildEmptyState()
@@ -157,9 +177,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                   category: expense.category,
                   note: expense.note,
                   isIncome: expense.isIncome,
-                  onTap: () {
-                    // TODO: Navigate to detail screen
-                  },
+                  onTap: () {},
                   onLongPress: () => _showDeleteDialog(expense),
                 );
               },
@@ -203,113 +221,97 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildPeriodSelector() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
+        children: _periods.map((period) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChipWidget(
+              label: period,
+              isSelected: _selectedPeriod == period,
+              onTap: () => setState(() => _selectedPeriod = period),
+              selectedColor: AppColors.primary,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    List<dynamic> categories = [];
+
+    if (_selectedType == 'income') {
+      categories = IncomeCategory.all;
+    } else if (_selectedType == 'expense') {
+      categories = ExpenseCategory.all;
+    } else {
+      categories = ExpenseCategory.all;
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
         children: [
-          // Category filter
-          FilterChip(
-            label: const Text('All'),
-            selected: _selectedCategory == 'all',
-            onSelected: (_) => setState(() => _selectedCategory = 'all'),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.primaryLight,
-            checkmarkColor: AppColors.primary,
+          CategoryFilterRow(
+            categories: categories,
+            selectedCategoryId: _selectedCategory,
+            onCategorySelected: (id) => setState(() => _selectedCategory = id),
           ),
-          const SizedBox(width: 8),
-          ...ExpenseCategory.all.map((category) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(category.name),
-                selected: _selectedCategory == category.id,
-                onSelected: (_) => setState(() => _selectedCategory = category.id),
-                backgroundColor: Colors.white,
-                selectedColor: category.color.withValues(alpha: 0.2),
-                checkmarkColor: category.color,
-                avatar: Text(category.icon),
-              ),
-            );
-          }),
-
           const SizedBox(width: 16),
-
-          // Type filter
-          FilterChip(
-            label: const Text('All Types'),
-            selected: _selectedType == 'all',
-            onSelected: (_) => setState(() => _selectedType = 'all'),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.primaryLight,
+          FilterChipWidget(
+            label: 'Income',
+            isSelected: _selectedType == 'income',
+            onTap: () {
+              setState(() {
+                _selectedType = _selectedType == 'income' ? 'all' : 'income';
+                if (_selectedType != 'income') {
+                  _selectedCategory = 'all';
+                }
+              });
+            },
+            selectedColor: AppColors.success,
           ),
           const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('Income'),
-            selected: _selectedType == 'income',
-            onSelected: (_) => setState(() => _selectedType = 'income'),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.success.withValues(alpha: 0.2),
-            checkmarkColor: AppColors.success,
-            avatar: const Icon(Icons.trending_up, size: 18),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('Expense'),
-            selected: _selectedType == 'expense',
-            onSelected: (_) => setState(() => _selectedType = 'expense'),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.error.withValues(alpha: 0.2),
-            checkmarkColor: AppColors.error,
-            avatar: const Icon(Icons.trending_down, size: 18),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Date range filter
-          FilterChip(
-            label: Text(_selectedDateRange == null ? 'Date Range' : '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}'),
-            selected: _selectedDateRange != null,
-            onSelected: (_) => _pickDateRange(),
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.primaryLight,
-            avatar: const Icon(Icons.calendar_today, size: 18),
+          FilterChipWidget(
+            label: 'Expense',
+            isSelected: _selectedType == 'expense',
+            onTap: () {
+              setState(() {
+                _selectedType = _selectedType == 'expense' ? 'all' : 'expense';
+                if (_selectedType != 'expense') {
+                  _selectedCategory = 'all';
+                }
+              });
+            },
+            selectedColor: AppColors.error,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSortButton() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _sortOrder = _sortOrder == 'newest' ? 'oldest' : 'newest';
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              _sortOrder == 'newest' ? Icons.arrow_downward : Icons.arrow_upward,
-              size: 16,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              _sortOrder == 'newest' ? 'Newest first' : 'Oldest first',
-              style: TextStyle(fontSize: 12, color: AppColors.primary),
-            ),
-          ],
-        ),
+  Widget _buildSortAndCountRow(int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '$count transactions',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          SortDropdown(
+            selectedValue: _sortOrder,
+            onChanged: (value) => setState(() => _sortOrder = value),
+            options: _sortOptions,
+            optionLabels: _sortLabels,
+          ),
+        ],
       ),
     );
   }
@@ -321,10 +323,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
             child: Icon(Icons.receipt_long, size: 48, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
