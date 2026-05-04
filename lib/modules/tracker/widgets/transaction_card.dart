@@ -27,10 +27,43 @@ class TransactionCard extends StatelessWidget {
     this.onLongPress,
   });
 
+  // Helper to get category data
+  String _getCategoryIcon() {
+    if (isIncome) {
+      final cat = IncomeCategory.fromId(category);
+      return cat?.icon ?? '📌';
+    } else {
+      final cat = ExpenseCategory.fromId(category);
+      return cat?.icon ?? '📌';
+    }
+  }
+
+  String _getCategoryName() {
+    if (isIncome) {
+      final cat = IncomeCategory.fromId(category);
+      return cat?.name ?? 'Other';
+    } else {
+      final cat = ExpenseCategory.fromId(category);
+      return cat?.name ?? 'Other';
+    }
+  }
+
+  Color _getCategoryColor() {
+    if (isIncome) {
+      final cat = IncomeCategory.fromId(category);
+      return cat?.color ?? AppColors.textSecondary;
+    } else {
+      final cat = ExpenseCategory.fromId(category);
+      return cat?.color ?? AppColors.textSecondary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final categoryObj = ExpenseCategory.fromId(category);
     final isNegative = !isIncome;
+    final categoryIcon = _getCategoryIcon();
+    final categoryName = _getCategoryName();
+    final categoryColor = _getCategoryColor();
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -51,12 +84,12 @@ class TransactionCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: (categoryObj?.color ?? Colors.grey).withValues(alpha: 0.1),
+                  color: categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
-                    categoryObj?.icon ?? '📌',
+                    categoryIcon,
                     style: const TextStyle(fontSize: 24),
                   ),
                 ),
@@ -111,14 +144,14 @@ class TransactionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: (categoryObj?.color ?? Colors.grey).withValues(alpha: 0.1),
+                      color: categoryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      categoryObj?.name ?? 'Other',
+                      categoryName,
                       style: TextStyle(
                         fontSize: 10,
-                        color: categoryObj?.color ?? Colors.grey,
+                        color: categoryColor,
                       ),
                     ),
                   ),

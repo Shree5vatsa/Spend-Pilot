@@ -8,6 +8,7 @@ import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
+import 'package:spend_pilot/core/widgets/filters/period_chip.dart';
 
 class TransactionHistoryScreen extends ConsumerStatefulWidget {
   final String initialCategory;
@@ -265,21 +266,22 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   }
 
   Widget _buildPeriodSelector() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: _periods.map((period) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChipWidget(
-              label: period,
-              isSelected: _selectedPeriod == period,
-              onTap: () => setState(() => _selectedPeriod = period),
-              selectedColor: AppColors.primary,
-            ),
-          );
-        }).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _periods.map((period) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: PeriodChip(
+                label: period,
+                isSelected: _selectedPeriod == period,
+                onTap: () => setState(() => _selectedPeriod = period),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

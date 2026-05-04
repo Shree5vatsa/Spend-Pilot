@@ -25,7 +25,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _selectedPeriod = 'Month';
   String _selectedCategory = 'all';
   String _sortOrder = 'newest';
-  bool _showLifetimeAmounts = true;
+  bool _showLifetimeAmounts = false;
 
   final List<String> _periods = ['Today', 'Week', 'Month', 'Year'];
   final List<String> _sortOptions = ['newest', 'oldest', 'amount_high', 'amount_low'];
@@ -413,54 +413,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildPeriodSelector() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _periods.map((period) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: PeriodChip(
-                      label: period,
-                      isSelected: _selectedPeriod == period,
-                      onTap: () => setState(() => _selectedPeriod = period),
-                    ),
-                  );
-                }).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _periods.map((period) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: PeriodChip(
+                label: period,
+                isSelected: _selectedPeriod == period,
+                onTap: () => setState(() => _selectedPeriod = period),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (_isFilterActive)
-            GestureDetector(
-              onTap: _resetFilters,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.clear, size: 14, color: AppColors.error),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Reset',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }

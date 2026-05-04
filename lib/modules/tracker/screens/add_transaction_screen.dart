@@ -34,12 +34,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _saveTransaction() {
     if (_formKey.currentState!.validate()) {
+      // Get category ID, default to 'other' if nothing selected
+      String categoryId;
+      if (_isExpense) {
+        categoryId = _selectedExpenseCategoryId.isEmpty ? 'other' : _selectedExpenseCategoryId;
+      } else {
+        categoryId = _selectedIncomeCategoryId.isEmpty ? 'other_income' : _selectedIncomeCategoryId;
+      }
+
       final newExpense = Expense(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _titleController.text.trim(),
         amount: double.parse(_amountController.text),
         date: _selectedDate,
-        category: _isExpense ? _selectedExpenseCategoryId : _selectedIncomeCategoryId,
+        category: categoryId,
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         isIncome: !_isExpense,
       );
