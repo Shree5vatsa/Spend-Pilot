@@ -242,56 +242,90 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   }
 
   Widget _buildFilterChips() {
-    List<dynamic> categories = [];
+    final List<dynamic> categories;
 
     if (_selectedType == 'income') {
       categories = IncomeCategory.all;
     } else if (_selectedType == 'expense') {
       categories = ExpenseCategory.all;
     } else {
-      categories = ExpenseCategory.all;
+      // Show both income and expense categories when no type is selected
+      categories = [...ExpenseCategory.all, ...IncomeCategory.all];
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          CategoryFilterRow(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Type filter row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              FilterChipWidget(
+                label: 'All Types',
+                isSelected: _selectedType == 'all',
+                onTap: () {
+                  setState(() {
+                    _selectedCategory = 'all';
+                    _selectedType = 'all';
+                  });
+                },
+                selectedColor: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              FilterChipWidget(
+                label: '💰 Income',
+                isSelected: _selectedType == 'income',
+                onTap: () {
+                  setState(() {
+                    final newType = _selectedType == 'income' ? 'all' : 'income';
+                    // Always reset category when switching types
+                    _selectedCategory = 'all';
+                    _selectedType = newType;
+                  });
+                },
+                selectedColor: AppColors.success,
+              ),
+              const SizedBox(width: 8),
+              FilterChipWidget(
+                label: '💸 Expense',
+                isSelected: _selectedType == 'expense',
+                onTap: () {
+                  setState(() {
+                    final newType = _selectedType == 'expense' ? 'all' : 'expense';
+                    // Always reset category when switching types
+                    _selectedCategory = 'all';
+                    _selectedType = newType;
+                  });
+                },
+                selectedColor: AppColors.error,
+              ),
+              if (_selectedCategory != 'all' || _selectedType != 'all') ...
+                [
+                  const SizedBox(width: 8),
+                  FilterChipWidget(
+                    label: '✕ Clear',
+                    isSelected: false,
+                    onTap: _resetFilters,
+                    selectedColor: AppColors.warning,
+                  ),
+                ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Category filter row (scrollable)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: CategoryFilterRow(
+            key: ValueKey(_selectedType),
             categories: categories,
             selectedCategoryId: _selectedCategory,
             onCategorySelected: (id) => setState(() => _selectedCategory = id),
           ),
-          const SizedBox(width: 16),
-          FilterChipWidget(
-            label: 'Income',
-            isSelected: _selectedType == 'income',
-            onTap: () {
-              setState(() {
-                _selectedType = _selectedType == 'income' ? 'all' : 'income';
-                if (_selectedType != 'income') {
-                  _selectedCategory = 'all';
-                }
-              });
-            },
-            selectedColor: AppColors.success,
-          ),
-          const SizedBox(width: 8),
-          FilterChipWidget(
-            label: 'Expense',
-            isSelected: _selectedType == 'expense',
-            onTap: () {
-              setState(() {
-                _selectedType = _selectedType == 'expense' ? 'all' : 'expense';
-                if (_selectedType != 'expense') {
-                  _selectedCategory = 'all';
-                }
-              });
-            },
-            selectedColor: AppColors.error,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

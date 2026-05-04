@@ -289,14 +289,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildFilterRow() {
-    List<dynamic> categories = [];
+    final List<dynamic> categories;
 
     if (_selectedType == 'income') {
       categories = IncomeCategory.all;
     } else if (_selectedType == 'expense') {
       categories = ExpenseCategory.all;
     } else {
-      categories = ExpenseCategory.all;
+      // Show both income and expense categories when no type is selected
+      categories = [...ExpenseCategory.all, ...IncomeCategory.all];
     }
 
     return SingleChildScrollView(
@@ -305,6 +306,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Row(
         children: [
           CategoryFilterRow(
+            key: ValueKey(_selectedType),
             categories: categories,
             selectedCategoryId: _selectedCategory,
             onCategorySelected: (id) => setState(() => _selectedCategory = id),
@@ -315,10 +317,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             isSelected: _selectedType == 'income',
             onTap: () {
               setState(() {
-                _selectedType = _selectedType == 'income' ? 'all' : 'income';
-                if (_selectedType != 'income') {
-                  _selectedCategory = 'all';
-                }
+                final newType = _selectedType == 'income' ? 'all' : 'income';
+                // Always reset category when switching types
+                _selectedCategory = 'all';
+                _selectedType = newType;
               });
             },
             selectedColor: AppColors.success,
@@ -329,10 +331,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             isSelected: _selectedType == 'expense',
             onTap: () {
               setState(() {
-                _selectedType = _selectedType == 'expense' ? 'all' : 'expense';
-                if (_selectedType != 'expense') {
-                  _selectedCategory = 'all';
-                }
+                final newType = _selectedType == 'expense' ? 'all' : 'expense';
+                // Always reset category when switching types
+                _selectedCategory = 'all';
+                _selectedType = newType;
               });
             },
             selectedColor: AppColors.error,
