@@ -12,6 +12,7 @@ import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 import 'add_transaction_screen.dart';
 import 'transaction_history_screen.dart';
+import 'package:spend_pilot/modules/tracker/screens/analytics_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -209,6 +210,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         elevation: 0,
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.analytics_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AnalyticsScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
         ],
