@@ -2,16 +2,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/data/services/hive_service.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 
-// Provider for Hive service - use the same instance
+
 final hiveServiceProvider = Provider<HiveService>((ref) {
   return HiveService.instance;
 });
 
-// Provider for transactions
+
 final transactionProvider = StateNotifierProvider<TransactionNotifier, List<Expense>>((ref) {
   final hiveService = ref.watch(hiveServiceProvider);
   return TransactionNotifier(hiveService);
 });
+
+final allIncomeProvider = Provider<double>((ref) {
+  return ref
+      .watch(transactionProvider)
+      .where((e) => e.isIncome)
+      .fold(0.0, (sum, e) => sum + e.amount);
+});
+
+final allExpenseProvider = Provider<double>((ref) {
+  return ref
+      .watch(transactionProvider)
+      .where((e) => !e.isIncome)
+      .fold(0.0, (sum, e) => sum + e.amount);
+});
+
+
+final allBalanceProvider = Provider<double>((ref) {
+  final income = ref.watch(allIncomeProvider);
+  final expense = ref.watch(allExpenseProvider);
+  return income - expense;
+});
+
+
+final transactionCountProvider = Provider<int>((ref) {
+  return ref.watch(transactionProvider).length;
+});
+
+
 
 class TransactionNotifier extends StateNotifier<List<Expense>> {
   final HiveService _hiveService;
@@ -20,31 +48,31 @@ class TransactionNotifier extends StateNotifier<List<Expense>> {
     _loadTransactions();
   }
 
-  // Load from Hive
+
   Future<void> _loadTransactions() async {
     try {
       final saved = await _hiveService.getAllExpenses();
       if (saved.isEmpty) {
-        // First launch - load mock data
+
         state = _mockTransactions;
         await _saveAllToHive();
       } else {
         state = saved;
       }
     } catch (e) {
-      // If error, load mock data
+
       state = _mockTransactions;
     }
   }
 
-  // Save all to Hive
+
   Future<void> _saveAllToHive() async {
     for (var expense in state) {
       await _hiveService.addExpense(expense);
     }
   }
 
-  // Mock data for first-time users
+
   static final List<Expense> _mockTransactions = [
     Expense(
       id: '1',
@@ -93,13 +121,11 @@ class TransactionNotifier extends StateNotifier<List<Expense>> {
     ),
   ];
 
-  // Add transaction
   Future<void> addTransaction(Expense expense) async {
     state = [expense, ...state];
     await _hiveService.addExpense(expense);
   }
 
-  // Delete transaction
   Future<void> deleteTransaction(String id) async {
     state = state.where((e) => e.id != id).toList();
     await _hiveService.deleteExpense(id);

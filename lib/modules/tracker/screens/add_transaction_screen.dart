@@ -1,27 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/widgets/buttons/primary_button.dart';
-import 'package:spend_pilot/core/widgets/forms/expense_form.dart';
-import 'package:spend_pilot/core/widgets/forms/income_form.dart';
+import 'package:spend_pilot/core/widgets/forms/transaction_form.dart';
+import 'package:spend_pilot/core/widgets/inputs/type_toggle.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final String? initialTitle;
-  final double? initialAmount;
-  final DateTime? initialDate;
-  final String? initialCategoryId;
-  final String? initialNote;
-  final bool? isExpense;
-
-  const AddTransactionScreen({
-    super.key,
-    this.initialTitle,
-    this.initialAmount,
-    this.initialDate,
-    this.initialCategoryId,
-    this.initialNote,
-    this.isExpense,
-  });
+  const AddTransactionScreen({super.key});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -34,9 +19,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _noteController = TextEditingController();
 
   bool _isExpense = true;
-
-  String _selectedExpenseCategoryId = '';  // Empty = nothing selected
-  String _selectedIncomeCategoryId = '';   // Empty = nothing selected
+  String _selectedCategoryId = '';
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -47,15 +30,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.dispose();
   }
 
+  // Switching type resets category so income/expense IDs don't bleed across.
+  void _onTypeChanged(bool isExpense) {
+    setState(() {
+      _isExpense = isExpense;
+      _selectedCategoryId = '';
+    });
+  }
+
   void _saveTransaction() {
     if (_formKey.currentState!.validate()) {
-      // Get category ID, default to 'other' if nothing selected
-      String categoryId;
-      if (_isExpense) {
-        categoryId = _selectedExpenseCategoryId.isEmpty ? 'other' : _selectedExpenseCategoryId;
-      } else {
-        categoryId = _selectedIncomeCategoryId.isEmpty ? 'other_income' : _selectedIncomeCategoryId;
-      }
+      final categoryId = _selectedCategoryId.isEmpty
+          ? (_isExpense ? 'other' : 'other_income')
+          : _selectedCategoryId;
 
       final newExpense = Expense(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -63,7 +50,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         amount: double.parse(_amountController.text),
         date: _selectedDate,
         category: categoryId,
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
         isIncome: !_isExpense,
       );
 
@@ -104,103 +93,37 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTypeToggle(),
-              const SizedBox(height: 24),
-              _isExpense
-                  ? ExpenseForm(
-                titleController: _titleController,
-                amountController: _amountController,
-                noteController: _noteController,
-                selectedCategoryId: _selectedExpenseCategoryId,
-                selectedDate: _selectedDate,
-                onCategoryChanged: (id) => setState(() => _selectedExpenseCategoryId = id),
-                onDateChanged: (date) => setState(() => _selectedDate = date),
-              )
-                  : IncomeForm(
-                titleController: _titleController,
-                amountController: _amountController,
-                noteController: _noteController,
-                selectedCategoryId: _selectedIncomeCategoryId,
-                selectedDate: _selectedDate,
-                onCategoryChanged: (id) => setState(() => _selectedIncomeCategoryId = id),
-                onDateChanged: (date) => setState(() => _selectedDate = date),
+
+              TypeToggle(
+                isExpense: _isExpense,
+                onChanged: _onTypeChanged,
               ),
               const SizedBox(height: 24),
+
+              // ── Unified form (adapts to expense / income)
+              TransactionForm(
+                isExpense: _isExpense,
+                titleController: _titleController,
+                amountController: _amountController,
+                noteController: _noteController,
+                selectedCategoryId: _selectedCategoryId,
+                selectedDate: _selectedDate,
+                onCategoryChanged: (id) =>
+                    setState(() => _selectedCategoryId = id),
+                onDateChanged: (date) =>
+                    setState(() => _selectedDate = date),
+              ),
+              const SizedBox(height: 24),
+
               PrimaryButton(
                 onPressed: _saveTransaction,
                 label: _isExpense ? 'SAVE EXPENSE' : 'SAVE INCOME',
-                backgroundColor: _isExpense ? AppColors.error : AppColors.success,
+                backgroundColor:
+                    _isExpense ? AppColors.error : AppColors.success,
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTypeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isExpense = true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _isExpense ? AppColors.error : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.trending_down, size: 20, color: _isExpense ? Colors.white : AppColors.error),
-                    const SizedBox(width: 8),
-                    Text(
-                      'EXPENSE',
-                      style: TextStyle(
-                        color: _isExpense ? Colors.white : AppColors.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isExpense = false),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !_isExpense ? AppColors.success : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.trending_up, size: 20, color: !_isExpense ? Colors.white : AppColors.success),
-                    const SizedBox(width: 8),
-                    Text(
-                      'INCOME',
-                      style: TextStyle(
-                        color: !_isExpense ? Colors.white : AppColors.success,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

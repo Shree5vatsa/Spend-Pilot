@@ -52,7 +52,6 @@ class FilterChipWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                // SAME TEXT COLOR FOR ALL CHIPS (no category-specific colors)
                 color: isSelected ? chipColor : AppColors.textSecondary,
               ),
             ),

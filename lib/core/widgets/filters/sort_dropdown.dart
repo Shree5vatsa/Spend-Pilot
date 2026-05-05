@@ -64,7 +64,7 @@ class SortDropdown extends StatelessWidget {
             onChanged(value);
           }
         },
-        // This makes the dropdown menu have rounded corners
+
         elevation: 4,
         borderRadius: BorderRadius.circular(16),
       ),

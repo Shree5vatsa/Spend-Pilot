@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
 import 'package:spend_pilot/core/widgets/cards/stat_card.dart';
+import 'package:spend_pilot/core/widgets/filters/category_filter_row.dart';
 import 'package:spend_pilot/core/widgets/filters/period_chip.dart';
-import 'package:spend_pilot/core/widgets/filters/filter_chip.dart';
 import 'package:spend_pilot/core/widgets/filters/sort_dropdown.dart';
 import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
@@ -229,8 +229,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 16),
               _buildPeriodSelector(),
               const SizedBox(height: 12),
-              if (showSubFilters) _buildSubFilterRow(subFilterCategories),
-              if (showSubFilters && subFilterCategories.isNotEmpty) const SizedBox(height: 12),
+              if (showSubFilters && subFilterCategories.isNotEmpty) ...[  
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CategoryFilterRow(
+                    categories: subFilterCategories,
+                    selectedCategoryId: _selectedCategory,
+                    onCategorySelected: (id) =>
+                        setState(() => _selectedCategory = id),
+                    allChipColor: _selectedStat == 'Income'
+                        ? AppColors.success
+                        : AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               _buildSortAndCountRow(filteredTransactions.length),
               const SizedBox(height: 8),
               filteredTransactions.isEmpty
@@ -431,42 +445,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildSubFilterRow(List<dynamic> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          FilterChipWidget(
-            label: 'All',
-            isSelected: _selectedCategory == 'all',
-            onTap: () => setState(() => _selectedCategory = 'all'),
-            selectedColor: _selectedStat == 'Income' ? AppColors.success : AppColors.error,
-          ),
-          const SizedBox(width: 8),
-          ...categories.map((category) {
-            final isSelected = _selectedCategory == category.id;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChipWidget(
-                label: category.name,
-                icon: category.icon,
-                isSelected: isSelected,
-                onTap: () => setState(() {
-                  if (isSelected) {
-                    _selectedCategory = 'all';
-                  } else {
-                    _selectedCategory = category.id;
-                  }
-                }),
-                selectedColor: category.color, // Pass the category's original color
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSortAndCountRow(int count) {
     return Padding(

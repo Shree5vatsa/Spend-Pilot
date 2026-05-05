@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
-import 'package:spend_pilot/core/widgets/filters/filter_chip.dart';
+import 'package:spend_pilot/core/widgets/filters/category_filter_row.dart';
+import 'package:spend_pilot/core/widgets/filters/period_chip.dart';
 import 'package:spend_pilot/core/widgets/filters/sort_dropdown.dart';
-import 'package:spend_pilot/core/widgets/modals/confirmation_dialog.dart';
 import 'package:spend_pilot/data/providers/transaction_provider.dart';
 import 'package:spend_pilot/modules/tracker/widgets/transaction_card.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
-import 'package:spend_pilot/core/widgets/filters/period_chip.dart';
 
 class TransactionHistoryScreen extends ConsumerStatefulWidget {
   final String initialCategory;
@@ -77,7 +76,6 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   List<Expense> _getFilteredTransactions(List<Expense> allTransactions) {
     final now = DateTime.now();
 
-    // Step 1: Apply date filter (skip if 'All time')
     List<Expense> filtered;
 
     if (_selectedPeriod == 'All time') {
@@ -106,7 +104,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       ).toList();
     }
 
-    // Step 2: Apply search filter
+
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((t) =>
       t.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -114,19 +112,19 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       ).toList();
     }
 
-    // Step 3: Apply category filter
+
     if (_selectedCategory != 'all') {
       filtered = filtered.where((t) => t.category == _selectedCategory).toList();
     }
 
-    // Step 4: Apply type filter
+
     if (_selectedType == 'Income') {
       filtered = filtered.where((t) => t.isIncome).toList();
     } else if (_selectedType == 'Expense') {
       filtered = filtered.where((t) => !t.isIncome).toList();
     }
 
-    // Step 5: Apply sorting
+
     switch (_sortOrder) {
       case 'newest':
         filtered.sort((a, b) => b.date.compareTo(a.date));
@@ -150,7 +148,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       _searchQuery = '';
       _selectedCategory = 'all';
       _selectedType = 'All Types';
-      // DO NOT reset period or sort order
+
     });
   }
 
@@ -159,7 +157,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     final allTransactions = ref.watch(transactionProvider);
     final filteredTransactions = _getFilteredTransactions(allTransactions);
 
-    // Determine which categories to show
+
     final showCategoryFilters = _selectedType != 'All Types';
     final categories = _selectedType == 'Income'
         ? IncomeCategory.all
@@ -188,18 +186,28 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       ),
       body: Column(
         children: [
-          // Search Bar
+
           _buildSearchBar(),
 
-          // Period Chips
           _buildPeriodSelector(),
 
-          // Type Dropdown
           _buildTypeDropdown(),
 
           // Category Chips (only when Income or Expense selected)
           if (showCategoryFilters && categories.isNotEmpty)
-            _buildCategoryRow(categories),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: CategoryFilterRow(
+                categories: categories,
+                selectedCategoryId: _selectedCategory,
+                onCategorySelected: (id) =>
+                    setState(() => _selectedCategory = id),
+                allChipColor: _selectedType == 'Income'
+                    ? AppColors.success
+                    : AppColors.error,
+              ),
+            ),
 
           // Sort and Count Row
           _buildSortAndCountRow(filteredTransactions.length),
@@ -326,42 +334,6 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     );
   }
 
-  Widget _buildCategoryRow(List<dynamic> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          FilterChipWidget(
-            label: 'All',
-            isSelected: _selectedCategory == 'all',
-            onTap: () => setState(() => _selectedCategory = 'all'),
-            selectedColor: _selectedType == 'Income' ? AppColors.success : AppColors.error,
-          ),
-          const SizedBox(width: 8),
-          ...categories.map((category) {
-            final isSelected = _selectedCategory == category.id;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChipWidget(
-                label: category.name,
-                icon: category.icon,
-                isSelected: isSelected,
-                onTap: () => setState(() {
-                  if (isSelected) {
-                    _selectedCategory = 'all';
-                  } else {
-                    _selectedCategory = category.id;
-                  }
-                }),
-                selectedColor: category.color,
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSortAndCountRow(int count) {
     return Padding(

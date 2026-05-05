@@ -4,7 +4,8 @@ import 'package:spend_pilot/core/widgets/inputs/custom_text_field.dart';
 import 'package:spend_pilot/core/widgets/inputs/category_selector.dart';
 import 'package:spend_pilot/core/widgets/inputs/date_picker_field.dart';
 
-class ExpenseForm extends StatefulWidget {
+class TransactionForm extends StatelessWidget {
+  final bool isExpense;
   final TextEditingController titleController;
   final TextEditingController amountController;
   final TextEditingController noteController;
@@ -13,8 +14,9 @@ class ExpenseForm extends StatefulWidget {
   final ValueChanged<String> onCategoryChanged;
   final ValueChanged<DateTime> onDateChanged;
 
-  const ExpenseForm({
+  const TransactionForm({
     super.key,
+    required this.isExpense,
     required this.titleController,
     required this.amountController,
     required this.noteController,
@@ -25,33 +27,36 @@ class ExpenseForm extends StatefulWidget {
   });
 
   @override
-  State<ExpenseForm> createState() => _ExpenseFormState();
-}
-
-class _ExpenseFormState extends State<ExpenseForm> {
-  @override
   Widget build(BuildContext context) {
+    final accentColor = isExpense ? AppColors.error : AppColors.success;
+    final titleHint = isExpense
+        ? 'e.g., Coffee, Grocery, Uber'
+        : 'e.g., Salary, Freelance, Gift';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Title ────────────────────────────────────────────────
         CustomTextField(
-          controller: widget.titleController,
+          controller: titleController,
           label: 'Title',
-          hint: 'e.g., Coffee, Grocery, Uber',
-          focusColor: AppColors.error,
+          hint: titleHint,
+          focusColor: accentColor,
           validator: (value) =>
-          (value == null || value.trim().isEmpty)
-              ? 'Please enter a title'
-              : null,
+              (value == null || value.trim().isEmpty)
+                  ? 'Please enter a title'
+                  : null,
         ),
         const SizedBox(height: 16),
+
+        // ── Amount ───────────────────────────────────────────────
         CustomTextField(
-          controller: widget.amountController,
+          controller: amountController,
           label: 'Amount',
           hint: '0.00',
           prefixText: '\$ ',
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          focusColor: AppColors.error,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          focusColor: accentColor,
           validator: (value) {
             if (value == null || value.isEmpty) return 'Please enter an amount';
             if (double.tryParse(value) == null) return 'Please enter a valid number';
@@ -60,24 +65,30 @@ class _ExpenseFormState extends State<ExpenseForm> {
           },
         ),
         const SizedBox(height: 16),
+
+        // ── Category grid (shared, animated) ─────────────────────
         CategorySelector(
-          selectedCategoryId: widget.selectedCategoryId,
-          onCategorySelected: widget.onCategoryChanged,
-          selectedBackgroundColor: AppColors.error.withValues(alpha: 0.15), // Light red
+          selectedCategoryId: selectedCategoryId,
+          onCategorySelected: onCategoryChanged,
+          isIncome: !isExpense,
         ),
         const SizedBox(height: 16),
+
+        // ── Date picker ──────────────────────────────────────────
         DatePickerField(
-          selectedDate: widget.selectedDate,
-          onDateSelected: widget.onDateChanged,
-          focusColor: AppColors.error,
+          selectedDate: selectedDate,
+          onDateSelected: onDateChanged,
+          focusColor: accentColor,
         ),
         const SizedBox(height: 16),
+
+        // ── Note (optional) ──────────────────────────────────────
         CustomTextField(
-          controller: widget.noteController,
+          controller: noteController,
           label: 'Note (Optional)',
           hint: 'Add a note...',
           maxLines: 3,
-          focusColor: AppColors.error,
+          focusColor: accentColor,
         ),
       ],
     );
