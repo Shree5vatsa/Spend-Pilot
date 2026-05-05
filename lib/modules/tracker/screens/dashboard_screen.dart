@@ -459,7 +459,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _selectedCategory = category.id;
                   }
                 }),
-                selectedColor: category.color,
+                selectedColor: category.color, // Pass the category's original color
               ),
             );
           }),

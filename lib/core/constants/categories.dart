@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spend_pilot/core/constants/colors.dart';
 
 class ExpenseCategory {
   final String id;
@@ -18,49 +19,49 @@ class ExpenseCategory {
       id: 'food',
       name: 'Food',
       icon: '🍔',
-      color: Color(0xFFFF6B6B),
+      color: Color(0xFF8B2C2C), // Deep red
     ),
     ExpenseCategory(
       id: 'transport',
       name: 'Transport',
       icon: '🚗',
-      color: Color(0xFF4ECDC4),
+      color: Color(0xFFB33A3A), // Medium red
     ),
     ExpenseCategory(
       id: 'shopping',
       name: 'Shopping',
       icon: '🛍️',
-      color: Color(0xFF45B7D1),
+      color: Color(0xFFCD5C5C), // Light red
     ),
     ExpenseCategory(
       id: 'bills',
       name: 'Bills',
       icon: '📄',
-      color: Color(0xFF96CEB4),
+      color: Color(0xFFA0522D), // Brown-red
     ),
     ExpenseCategory(
       id: 'entertainment',
       name: 'Entertainment',
       icon: '🎬',
-      color: Color(0xFFFFEAA7),
+      color: Color(0xFFD2691E), // Orange-red
     ),
     ExpenseCategory(
       id: 'healthcare',
       name: 'Healthcare',
       icon: '🏥',
-      color: Color(0xFFDDA0DD),
+      color: Color(0xFFE57373), // Soft red
     ),
     ExpenseCategory(
       id: 'education',
       name: 'Education',
       icon: '📚',
-      color: Color(0xFF98D8C8),
+      color: Color(0xFFC0392B), // Rich red
     ),
     ExpenseCategory(
       id: 'other',
       name: 'Other',
       icon: '📌',
-      color: Color(0xFFB0B0B0),
+      color: Color(0xFFA08080), // Muted red
     ),
   ];
 
@@ -91,49 +92,49 @@ class IncomeCategory {
       id: 'salary',
       name: 'Salary',
       icon: '💼',
-      color: Color(0xFF10B981),
-    ),
-    IncomeCategory(
-      id: 'freelance',
-      name: 'Freelance',
-      icon: '💻',
-      color: Color(0xFF3B82F6),
-    ),
-    IncomeCategory(
-      id: 'gift',
-      name: 'Gift',
-      icon: '🎁',
-      color: Color(0xFFF59E0B),
-    ),
-    IncomeCategory(
-      id: 'investment',
-      name: 'Investment',
-      icon: '📈',
-      color: Color(0xFF8B5CF6),
-    ),
-    IncomeCategory(
-      id: 'refund',
-      name: 'Refund',
-      icon: '💰',
-      color: Color(0xFFEC4899),
+      color: Color(0xFF1B5E20), // Dark green (highest importance)
     ),
     IncomeCategory(
       id: 'bonus',
       name: 'Bonus',
       icon: '🏆',
-      color: Color(0xFF14B8A6),
+      color: Color(0xFF2E7D32), // Rich green
+    ),
+    IncomeCategory(
+      id: 'freelance',
+      name: 'Freelance',
+      icon: '💻',
+      color: Color(0xFF388E3C), // Medium green
     ),
     IncomeCategory(
       id: 'rental',
       name: 'Rental',
       icon: '🏠',
-      color: Color(0xFFF97316),
+      color: Color(0xFF4CAF50), // Soft green
+    ),
+    IncomeCategory(
+      id: 'investment',
+      name: 'Investment',
+      icon: '📈',
+      color: Color(0xFF66BB6A), // Light green
+    ),
+    IncomeCategory(
+      id: 'gift',
+      name: 'Gift',
+      icon: '🎁',
+      color: Color(0xFF81C784), // Pale green
+    ),
+    IncomeCategory(
+      id: 'refund',
+      name: 'Refund',
+      icon: '💰',
+      color: Color(0xFFA5D6A7), // Mint green
     ),
     IncomeCategory(
       id: 'other_income',
       name: 'Other',
       icon: '📌',
-      color: Color(0xFF6B7280),
+      color: Color(0xFF9E9E9E), // Gray-green
     ),
   ];
 
