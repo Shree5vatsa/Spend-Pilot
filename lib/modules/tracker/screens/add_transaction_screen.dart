@@ -6,7 +6,22 @@ import 'package:spend_pilot/core/widgets/forms/income_form.dart';
 import 'package:spend_pilot/shared/models/expense.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final String? initialTitle;
+  final double? initialAmount;
+  final DateTime? initialDate;
+  final String? initialCategoryId;
+  final String? initialNote;
+  final bool? isExpense;
+
+  const AddTransactionScreen({
+    super.key,
+    this.initialTitle,
+    this.initialAmount,
+    this.initialDate,
+    this.initialCategoryId,
+    this.initialNote,
+    this.isExpense,
+  });
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();

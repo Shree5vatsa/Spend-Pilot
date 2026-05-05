@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:spend_pilot/core/constants/colors.dart';
 import 'package:spend_pilot/core/constants/categories.dart';
 import 'package:spend_pilot/core/utils/date_formatter.dart';
+import 'package:spend_pilot/modules/tracker/screens/transaction_detail_screen.dart';
+import 'package:spend_pilot/shared/models/expense.dart';
 
 class TransactionCard extends StatelessWidget {
   final String id;
@@ -58,6 +60,26 @@ class TransactionCard extends StatelessWidget {
     }
   }
 
+  void _navigateToDetail(BuildContext context) {
+    // Create Expense object from the card data
+    final expense = Expense(
+      id: id,
+      title: title,
+      amount: amount,
+      date: date,
+      category: category,
+      note: note,
+      isIncome: isIncome,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionDetailScreen(expense: expense),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isNegative = !isIncome;
@@ -73,7 +95,7 @@ class TransactionCard extends StatelessWidget {
         side: BorderSide(color: AppColors.border, width: 0.5),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: () => _navigateToDetail(context),  // ← ADD THIS
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
