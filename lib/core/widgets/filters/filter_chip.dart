@@ -23,15 +23,22 @@ class FilterChipWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? chipColor.withValues(alpha: 0.15) : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? chipColor : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: chipColor.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -45,6 +52,7 @@ class FilterChipWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                // SAME TEXT COLOR FOR ALL CHIPS (no category-specific colors)
                 color: isSelected ? chipColor : AppColors.textSecondary,
               ),
             ),

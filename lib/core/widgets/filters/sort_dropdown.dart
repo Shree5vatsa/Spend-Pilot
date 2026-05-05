@@ -21,25 +21,68 @@ class SortDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedValue,
-          icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
-          style: TextStyle(fontSize: 14, color: AppColors.primary),
-          items: options.map((value) {
-            return DropdownMenuItem(
-              value: value,
-              child: Text(optionLabels[value] ?? value),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
+      child: DropdownButton<String>(
+        value: selectedValue,
+        underline: const SizedBox(),
+        icon: const Icon(
+          Icons.swap_vert,
+          size: 18,
+          color: AppColors.textSecondary,
         ),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+        ),
+        items: options.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Row(
+              children: [
+                Icon(
+                  _getIconForSortOption(value),
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(optionLabels[value] ?? value),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: (value) {
+          if (value != null) {
+            onChanged(value);
+          }
+        },
+        // This makes the dropdown menu have rounded corners
+        elevation: 4,
+        borderRadius: BorderRadius.circular(16),
       ),
     );
+  }
+
+  IconData _getIconForSortOption(String value) {
+    switch (value) {
+      case 'newest':
+        return Icons.access_time;
+      case 'oldest':
+        return Icons.history;
+      case 'amount_high':
+        return Icons.trending_down;
+      case 'amount_low':
+        return Icons.trending_up;
+      default:
+        return Icons.sort;
+    }
   }
 }
